@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{# <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> #}
+{% block extrahead %}
+<script type="text/javascript">
+$(function(){
+    $(".play").click(function(){
+        $.ajax({type:"POST",url:"/play",data:"filename="+$(this).attr("filename")
+         + "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val()});
+     });
+    $("#stop").click(function(){
+        $.ajax({type:"POST",url:"/stop",data:"&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val()});
+     });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div id="content">
+    <div id="header">
+        <h1>アルパカ〜</h1>
+    </div>
+    <div class="body">
+    <button id="stop">stop</button>
+    {% for filename in files %}
+        <ul>
+            <li class="play" filename="{{ filename }}"><button>play</button> : {{ filename }}</li>
+        </ul>
+    {% endfor %}
+    </div>
+    {% csrf_token %}
+</div>
+{% endblock %}
