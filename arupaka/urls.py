@@ -2,6 +2,8 @@ from django.conf.urls import patterns, url
 
 urlpatterns = patterns('',
      url(r'^$', 'arupaka.views.index', name='index'),
-     url(r'^play$', 'arupaka.views.play', name='play'),
+     url(r'^select', 'arupaka.views.select', name='select'),
      url(r'^stop', 'arupaka.views.stop', name='stop'),
+     url(r'^control', 'arupaka.views.control', name='control'),
+     url(r'^time', 'arupaka.views.get_time', name='time'),
 )

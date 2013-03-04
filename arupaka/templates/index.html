@@ -1,15 +1,69 @@
 {% extends "base.html" %}
 {# <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> #}
 {% block extrahead %}
+<style type="text/css">
+#slider { margin: 10px; width:50%;}
+</style>
 <script type="text/javascript">
 $(function(){
-    $(".play").click(function(){
-        $.ajax({type:"POST",url:"/play",data:"filename="+$(this).attr("filename")
-         + "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val()});
-     });
+    var timer = $.timer(function(){
+        var time = $.ajax({type:"GET", url:"/time", async:false}).responseText;
+        $("#slidervalue").html(time+"%");
+        $("#slider").slider("value", time);
+    });
+    timer.set({time:10000, autostart:false});
+    $(document).ready(function() {
+        $("#controller").hide();
+        $("#slider").slider({
+            "start":function(event, ui){
+                timer.stop();
+            },
+            "slide":function(event, ui){
+                $("#slidervalue").html(ui.value+"%");
+            },
+            "stop":function(event, ui){
+                $.ajax({type:"POST",url:"/control",data:"command=seek=seek "+ ui.value + csrf});
+                timer.play();
+            }
+        });
+    });
+
+    var csrf = "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val();
+    $(".select").click(function(){
+        var filename = $(this).attr("filename");
+        $("#controller").show();
+        $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
+        $("#status").html("stop");
+        $("#title").html(filename);
+        $("#slidervalue").html("0%");
+        $("#slider").slider("value", 0);
+    });
+    $("#play").click(function(){
+        $.ajax({type:"POST",url:"/control",data:"command=play" + csrf});
+        $("#status").html("play");
+        timer.play();
+    });
+    $("#pause").click(function(){
+        $.ajax({type:"POST",url:"/control",data:"command=pause" + csrf});
+        $("#status").html("pause");
+        timer.stop();
+    });
     $("#stop").click(function(){
-        $.ajax({type:"POST",url:"/stop",data:"&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val()});
-     });
+        $.ajax({type:"POST",url:"/control",data:"command=stop" + csrf});
+        $("#status").html("stop");
+        $("#slidervalue").html("0%");
+        $("#slider").slider("value", 0);
+        timer.stop();
+    });
+    $("#shutdown").click(function(){
+        $.ajax({type:"POST",url:"/control",data:"command=shutdown" + csrf});
+        $("#status").html("stop");
+        $("#slidervalue").html("0%");
+        $("#slider").slider("value", 0);
+        timer.stop();
+        $("#controller").hide();
+    });
+    
 });
 </script>
 {% endblock %}
@@ -19,11 +73,19 @@ $(function(){
     <div id="header">
         <h1>アルパカ〜</h1>
     </div>
+    配信URL : http://{{ip}}:8080
     <div class="body">
-    <button id="stop">stop</button>
+    <div id="controller">
+        <p><span id="status"></span> : <span id="title"></span></p>
+        <div id="slider"></div> <span id="slidervalue"></span>
+        <button id="play">play</button>
+        <button id="pause">pause</button>
+        <button id="stop">stop</button>
+        &nbsp;<button id="shutdown">kill</button>
+    </div>
     {% for filename in files %}
         <ul>
-            <li class="play" filename="{{ filename }}"><button>play</button> : {{ filename }}</li>
+            <li class="select" filename="{{ filename }}"><button>select</button> : {{ filename }}</li>
         </ul>
     {% endfor %}
     </div>
