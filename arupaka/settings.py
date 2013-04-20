@@ -5,7 +5,7 @@ TEMPLATE_DEBUG = DEBUG
 
 # user setting
 VLC_PATH = "/Applications/VLC.app/Contents/MacOS/VLC"
-MOVIE_DIR = "/Users/non/Desktop"
+MOVIE_DIR = "/Users/non/Desktop/anime"
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),

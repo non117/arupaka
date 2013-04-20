@@ -6,4 +6,5 @@ urlpatterns = patterns('',
      url(r'^stop', 'arupaka.views.stop', name='stop'),
      url(r'^control', 'arupaka.views.control', name='control'),
      url(r'^time', 'arupaka.views.get_time', name='time'),
+     url(r'^status', 'arupaka.views.get_status', name='status'),
 )

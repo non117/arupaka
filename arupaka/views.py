@@ -3,14 +3,13 @@ import atexit
 import os, glob
 import re
 import subprocess, shlex
-import telnetlib
-import time
 import urllib
 
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.views.generic.simple import direct_to_template
 
+from arupaka.vlclib import Controller, get_vlc_status, VLC_STATUS_PLAYING, VLC_STATUS_STOPPED, VLC_STATUS_PAUSED
 from arupaka.settings import VLC_PATH, MOVIE_DIR
 
 encoding = "utf-8"
@@ -24,24 +23,26 @@ def index(request):
         movies = Movies()
         cache.set("movies", movies, 3600)
     files = movies.get_filenames()
-    
-    return direct_to_template(request, "index.html", {"files":files, "ip":ip})
+    extra_context = {"files":files, "ip":ip}
+    extra_context.update(get_vlc_status())
+    return direct_to_template(request, "index.html", extra_context)
 
 def select(request):
     if request.method == "POST":
-        moviepath = os.path.join(MOVIE_DIR, request.POST["filename"]).encode(encoding)
-        cwd, vlc = os.path.split(VLC_PATH)
-        os.chdir(cwd)
-        if cache.get("pid"):
-            Controller().shutdown()
-        
-        command = vlc + ' -vvv "%s"' %  moviepath + ' --intf telnet --sout "# standard{access=http, mux=ts, dst=:8080, width=1280, height=720}"'
-        if os.name == "nt": command = shlex.split(command) # windows
-        p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        cache.set("pid", p.pid, 86400) # 24h
-        atexit.register(kill)
-        time.sleep(0.3)
-        Controller().stop()
+        controller = Controller()
+        filename = request.POST["filename"]
+        if not controller.alive:
+            moviepath = os.path.join(MOVIE_DIR, filename).encode(encoding)
+            cwd, vlc = os.path.split(VLC_PATH)
+            os.chdir(cwd)
+            command = vlc + ' -vvv "%s"' %  moviepath + ' --intf telnet --sout "#standard{access=http, mux=ts, dst=:8080}"'
+            if os.name == "nt": command = shlex.split(command) # windows
+            p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+            cache.set("pid", p.pid, 86400) # 24h
+            atexit.register(kill)
+            controller.clear()
+        moviepath = os.path.join(MOVIE_DIR, filename).encode(encoding)
+        controller.enqueue(moviepath)
     return HttpResponse()
 
 def control(request):
@@ -60,9 +61,17 @@ def control(request):
 
 def get_time(request):
     c = Controller()
+    if c.status == VLC_STATUS_STOPPED or c.status == VLC_STATUS_PAUSED:
+        return HttpResponse(-1)
     length = c.get_length()
     time = c.get_time()
     return HttpResponse(100*time/length)
+
+def get_status(request):
+    res = str([get_vlc_status()])
+    res = res.replace("False", "false")
+    res = res.replace("True", "true")
+    return HttpResponse(res)
 
 def kill():
     pid = cache.get("pid")
@@ -94,39 +103,3 @@ class Movies():
     def search(self, keyword):
         r = re.compile(keyword)
         return filter(lambda m:r.search(str(m)), self.movies)
-
-class Controller():
-    def __init__(self):
-        self.client = telnetlib.Telnet("localhost","4212")
-        self.write("admin")
-        self.read()
-    def read(self):
-        return self.client.read_until("> ", timeout=1)
-    def write(self, command):
-        self.client.write(command + "\n")
-    def logout(self):
-        self.write("logout")
-        self.read()
-    def shutdown(self):
-        self.write("shutdown")
-    def pause(self):
-        self.write("pause")
-        self.read()
-    def stop(self):
-        self.write("stop")
-    def play(self):
-        self.write("play")
-        self.read()
-    def seek(self, percent):
-        self.write("seek %d%%" % percent)
-        self.read()
-    def is_playing(self):
-        self.write("is_playing")
-        status = self.read().splitlines()[0]
-        return int(status) == 1
-    def get_length(self):
-        self.write("get_length")
-        return int(self.read().splitlines()[0])
-    def get_time(self):
-        self.write("get_time")
-        return int(self.read().splitlines()[0])

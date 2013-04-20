@@ -6,14 +6,24 @@
 </style>
 <script type="text/javascript">
 $(function(){
+    function add_to_list(filename){
+        $("#playlist").html($("#playlist").html() + filename + "<br>");
+    }
+    function clear_list(){
+        $("#playlist").html("");
+    }
+    
     var timer = $.timer(function(){
         var time = $.ajax({type:"GET", url:"/time", async:false}).responseText;
+        if(time < 0){
+            time = 0;
+            self.stop();
+        }
         $("#slidervalue").html(time+"%");
         $("#slider").slider("value", time);
     });
     timer.set({time:10000, autostart:false});
     $(document).ready(function() {
-        $("#controller").hide();
         $("#slider").slider({
             "start":function(event, ui){
                 timer.stop();
@@ -26,44 +36,69 @@ $(function(){
                 timer.play();
             }
         });
-    });
-
-    var csrf = "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val();
-    $(".select").click(function(){
-        var filename = $(this).attr("filename");
-        $("#controller").show();
-        $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
-        $("#status").html("stop");
-        $("#title").html(filename);
+        var vlc_status = eval($.ajax({type:"GET", url:"/status", async:false}).responseText)[0];
         $("#slidervalue").html("0%");
         $("#slider").slider("value", 0);
+        if(vlc_status["status"]=="playing" || vlc_status["status"]=="paused"){
+            $("#status").html(vlc_status["status"]);
+            //$("#title").html(filename);
+            timer.play();
+            var time = $.ajax({type:"GET", url:"/time", async:false}).responseText;
+            $("#slidervalue").html(time+"%");
+            $("#slider").slider("value", time);
+        }
     });
-    $("#play").click(function(){
+    var csrf = "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val();
+    $('input[name="select"]').click(function(){
+        //if($('input[name="select"]').attr("checked")){
+        var filename = $(this).attr("filename");
+        $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
+        $("#status").html("stop");
+        //$("#title").html(filename);
+        // TODO filenameを取ってきてアレする
+        $("#slidervalue").html("0%");
+        $("#slider").slider("value", 0);
+        add_to_list(filename);
+        pause();
+        //}
+    });
+    function play(){
         $.ajax({type:"POST",url:"/control",data:"command=play" + csrf});
         $("#status").html("play");
         timer.play();
-    });
-    $("#pause").click(function(){
+    }
+    function pause(){
         $.ajax({type:"POST",url:"/control",data:"command=pause" + csrf});
         $("#status").html("pause");
         timer.stop();
-    });
-    $("#stop").click(function(){
+    }
+    function stop(){
         $.ajax({type:"POST",url:"/control",data:"command=stop" + csrf});
         $("#status").html("stop");
         $("#slidervalue").html("0%");
         $("#slider").slider("value", 0);
         timer.stop();
-    });
-    $("#shutdown").click(function(){
-        $.ajax({type:"POST",url:"/control",data:"command=shutdown" + csrf});
-        $("#status").html("stop");
-        $("#slidervalue").html("0%");
-        $("#slider").slider("value", 0);
-        timer.stop();
-        $("#controller").hide();
-    });
-    
+    }
+    function clear(){
+        $.ajax({type:"POST",url:"/control",data:"command=clear" + csrf});
+        stop();
+        clear_list();
+        $('input[name="select"]').attr("checked",false);
+    }
+    function prev(){
+        $.ajax({type:"POST",url:"/control",data:"command=prev" + csrf});
+        pause();
+    }
+    function next(){
+        $.ajax({type:"POST",url:"/control",data:"command=next" + csrf});
+        pause();
+    }
+    $("#play").click(play);
+    $("#pause").click(pause);
+    $("#stop").click(stop);
+    $("#clear").click(clear);
+    $("#prev").click(prev);
+    $("#next").click(next);
 });
 </script>
 {% endblock %}
@@ -78,14 +113,23 @@ $(function(){
     <div id="controller">
         <p><span id="status"></span> : <span id="title"></span></p>
         <div id="slider"></div> <span id="slidervalue"></span>
-        <button id="play">play</button>
-        <button id="pause">pause</button>
-        <button id="stop">stop</button>
-        &nbsp;<button id="shutdown">kill</button>
+        <button id="play">▶</button>
+        <button id="pause">||</button>
+        <button id="stop">■</button>
+        &nbsp;&nbsp;<button id="prev"><<</button>
+        <button id="next">>></button>
+        &nbsp;&nbsp;<button id="clear">clear</button>
     </div>
+    <br>
+    <div id="playlist">
+        {% for filename in  playlist %}
+            {{ filename }}<br/>
+        {% endfor %}
+    </div>
+    <br>
     {% for filename in files %}
         <ul>
-            <li class="select" filename="{{ filename }}"><button>select</button> : {{ filename }}</li>
+            <li><input type="checkbox" name="select" filename="{{ filename }}"> : {{ filename }}</li>
         </ul>
     {% endfor %}
     </div>
