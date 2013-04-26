@@ -101,7 +101,7 @@ class Movies():
         files = glob.glob(os.path.join(MOVIE_DIR, "*.*"))
         f = lambda filename:any([filename.endswith(extension) for extension in extensions])
         movie_paths = map(lambda s:s.decode(ENCODING).encode("utf-8"), filter(f, files))
-        self.movies = map(Movie, movie_paths)
+        self.movies = reversed(map(Movie, movie_paths))
     
     def get_filenames(self):
         return map(str, self.movies)
