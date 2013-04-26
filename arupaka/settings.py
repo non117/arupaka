@@ -11,6 +11,7 @@ if os.name == "nt":
 # user setting
 VLC_PATH = "/Applications/VLC.app/Contents/MacOS/VLC"
 MOVIE_DIR = "/Users/non/Desktop/anime"
+OPTION = ' --intf telnet --sout "#standard{access=http, mux=ts, dst=:8080}"'
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),

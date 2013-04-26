@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import atexit
+import json
 import os, glob
 import re
 import subprocess, shlex
@@ -10,7 +11,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from arupaka.vlclib import Controller, get_vlc_status, VLC_STATUS_STOPPED, VLC_STATUS_PAUSED
-from arupaka.settings import VLC_PATH, MOVIE_DIR, ENCODING
+from arupaka.settings import VLC_PATH, MOVIE_DIR, ENCODING, OPTION
 
 ip = urllib.urlopen("http://ipcheck.ieserver.net/").read()
 
@@ -32,7 +33,7 @@ def select(request):
             moviepath = os.path.join(MOVIE_DIR, filename).encode(ENCODING)
             cwd, vlc = os.path.split(VLC_PATH)
             os.chdir(cwd)
-            command = vlc + ' -vvv "%s"' %  moviepath + ' --intf telnet --sout "#standard{access=http, mux=ts, dst=:8080}"'
+            command = vlc + ' -vvv "%s"' %  moviepath + OPTION
             if os.name == "nt": command = shlex.split(command) # windows
             p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             cache.set("pid", p.pid, 86400) # 24h
@@ -43,7 +44,7 @@ def select(request):
             controller = Controller()
             controller.clear()
         
-        moviepath = os.path.join(MOVIE_DIR, filename).encode(ENCODING)
+        moviepath = os.path.join(MOVIE_DIR, filename).encode("utf-8")
         controller.enqueue(moviepath)
         if filename == controller.get_filename():
             controller.pause()
@@ -74,9 +75,7 @@ def get_time(request):
     return HttpResponse(100*time/length)
 
 def get_status(request):
-    res = str([get_vlc_status()])
-    res = res.replace("False", "false")
-    res = res.replace("True", "true")
+    res = json.dumps(get_vlc_status())
     return HttpResponse(res)
 
 def kill():

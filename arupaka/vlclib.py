@@ -107,7 +107,5 @@ class Controller():
         s = self.read()
         status = re.search("state\s[a-z]+", s).group().split()[1]
         if status == VLC_STATUS_PLAYING or status == VLC_STATUS_PAUSED:
-            filename = os.path.split(re.search("file.*\)",s).group()[:-2])[-1]
-            print filename #DEBUG
-            return os.path.split(re.search("file.*\)",s).group()[:-2])[-1]
+            return os.path.split(re.search("file.*\)",s).group()[:-2])[-1].decode("utf-8")
         return ""

@@ -13,7 +13,7 @@ $(function(){
         $("#playlist").html("");
     }
     function sync(){
-        var vlc_status = eval($.ajax({type:"GET", url:"/status", async:false}).responseText)[0];
+        var vlc_status = $.parseJSON($.ajax({type:"GET", url:"/status", async:false}).responseText);
         $("#slidervalue").html("0%");
         $("#slider").slider("value", 0);
         if(vlc_status["status"]=="playing" || vlc_status["status"]=="paused"){
@@ -103,7 +103,7 @@ $(function(){
     <div id="controller">
         <p><span id="status"></span> : <span id="title"></span></p>
         <div id="slider"></div> <span id="slidervalue"></span>
-        <button id="play">▶</button>
+        <button id="play">|></button>
         <button id="pause">||</button>
         <button id="stop">■</button>
         &nbsp;&nbsp;<button id="prev"><<</button>
