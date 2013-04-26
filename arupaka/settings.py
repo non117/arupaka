@@ -1,7 +1,12 @@
 # Django settings for arupaka project.
+import os
 from os import path
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+ENCODING = "utf-8"
+if os.name == "nt":
+    ENCODING = "cp932"
 
 # user setting
 VLC_PATH = "/Applications/VLC.app/Contents/MacOS/VLC"

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import re
 import socket
 import telnetlib
@@ -12,10 +13,12 @@ def get_vlc_status():
     alive = c.alive
     playlist = []
     status = VLC_STATUS_STOPPED
+    filename = ""
     if alive:
         playlist = c.playlist()
         status = c.status()
-    return {"alive":alive, "playlist":playlist, "status":status}
+        filename = c.get_filename()
+    return {"alive":alive, "playlist":playlist, "status":status, "filename":filename}
 
 class Controller():
     def __init__(self):
@@ -50,7 +53,10 @@ class Controller():
     def playlist(self):
         self.write("playlist")
         s = self.read()
-        return map(lambda s:re.search("[0-9]\s-\s.+\s\(",s).group()[4:-2], s.split("\n")[2:-3])
+        status = self.status()
+        if status == VLC_STATUS_PLAYING or status == VLC_STATUS_PAUSED:
+            return map(lambda s:re.search("[0-9]\s-\s.+\s\(",s).group()[4:-2], s.split("\n")[2:-3])
+        return ""
     
     def pause(self):
         self.write("pause")
@@ -95,3 +101,13 @@ class Controller():
     def get_time(self):
         self.write("get_time")
         return int(self.read().splitlines()[0])
+    
+    def get_filename(self):
+        self.write("status")
+        s = self.read()
+        status = re.search("state\s[a-z]+", s).group().split()[1]
+        if status == VLC_STATUS_PLAYING or status == VLC_STATUS_PAUSED:
+            filename = os.path.split(re.search("file.*\)",s).group()[:-2])[-1]
+            print filename #DEBUG
+            return os.path.split(re.search("file.*\)",s).group()[:-2])[-1]
+        return ""

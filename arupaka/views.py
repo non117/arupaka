@@ -7,14 +7,11 @@ import urllib
 
 from django.core.cache import cache
 from django.http import HttpResponse
-from django.views.generic.simple import direct_to_template
+from django.shortcuts import render
 
-from arupaka.vlclib import Controller, get_vlc_status, VLC_STATUS_PLAYING, VLC_STATUS_STOPPED, VLC_STATUS_PAUSED
-from arupaka.settings import VLC_PATH, MOVIE_DIR
+from arupaka.vlclib import Controller, get_vlc_status, VLC_STATUS_STOPPED, VLC_STATUS_PAUSED
+from arupaka.settings import VLC_PATH, MOVIE_DIR, ENCODING
 
-encoding = "utf-8"
-if os.name == "nt":
-    encoding = "cp932"
 ip = urllib.urlopen("http://ipcheck.ieserver.net/").read()
 
 def index(request):
@@ -25,14 +22,14 @@ def index(request):
     files = movies.get_filenames()
     extra_context = {"files":files, "ip":ip}
     extra_context.update(get_vlc_status())
-    return direct_to_template(request, "index.html", extra_context)
+    return render(request, "index.html", extra_context)
 
 def select(request):
     if request.method == "POST":
         controller = Controller()
         filename = request.POST["filename"]
         if not controller.alive:
-            moviepath = os.path.join(MOVIE_DIR, filename).encode(encoding)
+            moviepath = os.path.join(MOVIE_DIR, filename).encode(ENCODING)
             cwd, vlc = os.path.split(VLC_PATH)
             os.chdir(cwd)
             command = vlc + ' -vvv "%s"' %  moviepath + ' --intf telnet --sout "#standard{access=http, mux=ts, dst=:8080}"'
@@ -40,9 +37,16 @@ def select(request):
             p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
             cache.set("pid", p.pid, 86400) # 24h
             atexit.register(kill)
+            
+            import time
+            time.sleep(0.5)
+            controller = Controller()
             controller.clear()
-        moviepath = os.path.join(MOVIE_DIR, filename).encode(encoding)
+        
+        moviepath = os.path.join(MOVIE_DIR, filename).encode(ENCODING)
         controller.enqueue(moviepath)
+        if filename == controller.get_filename():
+            controller.pause()
     return HttpResponse()
 
 def control(request):
@@ -62,8 +66,10 @@ def control(request):
 def get_time(request):
     c = Controller()
     if c.status == VLC_STATUS_STOPPED or c.status == VLC_STATUS_PAUSED:
-        return HttpResponse(-1)
+        return HttpResponse(0)
     length = c.get_length()
+    if length == 0:
+        return HttpResponse(0)
     time = c.get_time()
     return HttpResponse(100*time/length)
 
@@ -94,7 +100,7 @@ class Movies():
         extensions = (".mp4",".ts",".avi",".mov",".flv",".wmv")
         files = glob.glob(os.path.join(MOVIE_DIR, "*.*"))
         f = lambda filename:any([filename.endswith(extension) for extension in extensions])
-        movie_paths = map(lambda s:s.decode(encoding).encode("utf-8"), filter(f, files))
+        movie_paths = map(lambda s:s.decode(ENCODING).encode("utf-8"), filter(f, files))
         self.movies = map(Movie, movie_paths)
     
     def get_filenames(self):

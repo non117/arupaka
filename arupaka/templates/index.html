@@ -12,16 +12,21 @@ $(function(){
     function clear_list(){
         $("#playlist").html("");
     }
-    
-    var timer = $.timer(function(){
-        var time = $.ajax({type:"GET", url:"/time", async:false}).responseText;
-        if(time < 0){
-            time = 0;
-            self.stop();
+    function sync(){
+        var vlc_status = eval($.ajax({type:"GET", url:"/status", async:false}).responseText)[0];
+        $("#slidervalue").html("0%");
+        $("#slider").slider("value", 0);
+        if(vlc_status["status"]=="playing" || vlc_status["status"]=="paused"){
+            $("#status").html(vlc_status["status"]);
+            $("#title").html(vlc_status["filename"]);
+            timer.play();
+            var time = $.ajax({type:"GET", url:"/time", async:false}).responseText;
+            $("#slidervalue").html(time+"%");
+            $("#slider").slider("value", time);
         }
-        $("#slidervalue").html(time+"%");
-        $("#slider").slider("value", time);
-    });
+    }
+    
+    var timer = $.timer(sync);
     timer.set({time:10000, autostart:false});
     $(document).ready(function() {
         $("#slider").slider({
@@ -36,62 +41,47 @@ $(function(){
                 timer.play();
             }
         });
-        var vlc_status = eval($.ajax({type:"GET", url:"/status", async:false}).responseText)[0];
-        $("#slidervalue").html("0%");
-        $("#slider").slider("value", 0);
-        if(vlc_status["status"]=="playing" || vlc_status["status"]=="paused"){
-            $("#status").html(vlc_status["status"]);
-            //$("#title").html(filename);
-            timer.play();
-            var time = $.ajax({type:"GET", url:"/time", async:false}).responseText;
-            $("#slidervalue").html(time+"%");
-            $("#slider").slider("value", time);
-        }
+        sync();
     });
     var csrf = "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val();
     $('input[name="select"]').click(function(){
-        //if($('input[name="select"]').attr("checked")){
         var filename = $(this).attr("filename");
         $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
-        $("#status").html("stop");
-        //$("#title").html(filename);
-        // TODO filenameを取ってきてアレする
-        $("#slidervalue").html("0%");
-        $("#slider").slider("value", 0);
         add_to_list(filename);
-        pause();
-        //}
+        $(this).delay(10).queue(sync);
     });
     function play(){
         $.ajax({type:"POST",url:"/control",data:"command=play" + csrf});
-        $("#status").html("play");
         timer.play();
+        $(this).delay(10).queue(sync);
     }
     function pause(){
         $.ajax({type:"POST",url:"/control",data:"command=pause" + csrf});
-        $("#status").html("pause");
-        timer.stop();
+        $(this).delay(10).queue(sync);
     }
     function stop(){
         $.ajax({type:"POST",url:"/control",data:"command=stop" + csrf});
-        $("#status").html("stop");
+        $("#status").html("stopped");
         $("#slidervalue").html("0%");
         $("#slider").slider("value", 0);
+        $("#title").html("");
         timer.stop();
     }
     function clear(){
         $.ajax({type:"POST",url:"/control",data:"command=clear" + csrf});
         stop();
         clear_list();
-        $('input[name="select"]').attr("checked",false);
+        $('input[name="select"]').attr("checked", false);
     }
     function prev(){
         $.ajax({type:"POST",url:"/control",data:"command=prev" + csrf});
-        pause();
+        $(this).delay(50).queue(pause);
+        $(this).delay(100).queue(sync);
     }
     function next(){
         $.ajax({type:"POST",url:"/control",data:"command=next" + csrf});
-        pause();
+        $(this).delay(50).queue(pause);
+        $(this).delay(100).queue(sync);
     }
     $("#play").click(play);
     $("#pause").click(pause);
