@@ -15,15 +15,20 @@ from arupaka.settings import VLC_PATH, MOVIE_DIR, ENCODING, OPTION
 
 ip = urllib.urlopen("http://ipcheck.ieserver.net/").read()
 
-def index(request):
+def index(request): #POSTの時にアレする
     movies = cache.get("movies")
     if movies is None:
         movies = Movies()
         cache.set("movies", movies, 3600)
-    files = movies.get_filenames()
-    extra_context = {"files":files, "ip":ip}
-    extra_context.update(get_vlc_status())
-    return render(request, "index.html", extra_context)
+    if request.method == "GET":
+        files = movies.get_filenames()
+        extra_context = {"files":files, "ip":ip}
+        extra_context.update(get_vlc_status())
+        return render(request, "index.html", extra_context)
+    elif request.method == "POST":
+        keyword = request.POST["keyword"].encode("utf-8")
+        files = movies.search(keyword)
+        return render(request, "search.html", {"files":files})
 
 def select(request):
     if request.method == "POST":
@@ -99,8 +104,8 @@ class Movies():
         extensions = (".mp4",".ts",".avi",".mov",".flv",".wmv")
         files = glob.glob(os.path.join(MOVIE_DIR, "*.*"))
         f = lambda filename:any([filename.endswith(extension) for extension in extensions])
-        movie_paths = map(lambda s:s.decode(ENCODING).encode("utf-8"), filter(f, files))
-        self.movies = reversed(map(Movie, movie_paths))
+        movie_paths = reversed(map(lambda s:s.decode(ENCODING).encode("utf-8"), filter(f, files)))
+        self.movies = map(Movie, movie_paths)
     
     def get_filenames(self):
         return map(str, self.movies)

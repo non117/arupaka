@@ -1,0 +1,5 @@
+{% for filename in files %}
+    <ul>
+        <li><input type="checkbox" name="select" filename="{{ filename }}"> : {{ filename }}</li>
+    </ul>
+{% endfor %}

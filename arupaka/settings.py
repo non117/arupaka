@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Django settings for arupaka project.
 import os
 from os import path
@@ -10,8 +11,11 @@ if os.name == "nt":
 
 # user setting
 VLC_PATH = "/Applications/VLC.app/Contents/MacOS/VLC"
+#VLC_PATH = "C:¥¥Program Files¥¥VideoLAN¥¥VLC¥¥VLC.exe"
 MOVIE_DIR = "/Users/non/Desktop/anime"
+#MOVIE_DIR = "D:¥¥Anime¥¥TV¥¥"
 OPTION = ' --intf telnet --sout "#standard{access=http, mux=ts, dst=:8080}"'
+#OPTION = ' --intf telnet --sout "#transcode{vcodec=h264, width=1280, height=720, vb=800, ab=128, delay=5000}: standard{access=http, mux=ts, dst=:8080}"'
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),

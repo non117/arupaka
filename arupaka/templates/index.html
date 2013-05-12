@@ -44,12 +44,18 @@ $(function(){
         sync();
     });
     var csrf = "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val();
-    $('input[name="select"]').click(function(){
-        var filename = $(this).attr("filename");
-        $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
-        add_to_list(filename);
-        $(this).delay(10).queue(sync);
-    });
+    function selectbind(){
+        $('input[name="select"]').click(function(){
+            var filename = $(this).attr("filename");
+            $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
+            add_to_list(filename);
+            $(this).delay(10).queue(sync);
+        });
+    }
+    function search(keyword){
+        var files_html = $.ajax({type:"POST",url:".",data:"keyword=" + keyword + csrf, async:false}).responseText;
+        $("#search_result").html(files_html);
+    }
     function play(){
         $.ajax({type:"POST",url:"/control",data:"command=play" + csrf});
         timer.play();
@@ -83,6 +89,9 @@ $(function(){
         $(this).delay(50).queue(pause);
         $(this).delay(100).queue(sync);
     }
+    selectbind();
+    $("#exec_search").click(function(){ search($(":input[type='text']").val()); selectbind(); });
+    $("#reset_list").click(function(){ search(""); selectbind(); })
     $("#play").click(play);
     $("#pause").click(pause);
     $("#stop").click(stop);
@@ -94,34 +103,41 @@ $(function(){
 {% endblock %}
 
 {% block content %}
-<div id="content">
-    <div id="header">
+<div id="content" class="container">
+    <div class="page-header">
         <h1>アルパカ〜</h1>
     </div>
-    配信URL : http://{{ip}}:8080
-    <div class="body">
-    <div id="controller">
-        <p><span id="status"></span> : <span id="title"></span></p>
-        <div id="slider"></div> <span id="slidervalue"></span>
-        <button id="play">|></button>
-        <button id="pause">||</button>
-        <button id="stop">■</button>
-        &nbsp;&nbsp;<button id="prev"><<</button>
-        <button id="next">>></button>
-        &nbsp;&nbsp;<button id="clear">clear</button>
-    </div>
-    <br>
-    <div id="playlist">
-        {% for filename in  playlist %}
-            {{ filename }}<br/>
-        {% endfor %}
-    </div>
-    <br>
-    {% for filename in files %}
-        <ul>
-            <li><input type="checkbox" name="select" filename="{{ filename }}"> : {{ filename }}</li>
-        </ul>
-    {% endfor %}
+    <div class="row">
+    <p>配信URL : http://{{ip}}:8080</p>
+        <div id="controller">
+            <p><span id="status"></span> : <span id="title"></span></p>
+            <div id="slider"></div> <span id="slidervalue"></span>
+            <button class="btn" id="play">|></button>
+            <button class="btn" id="pause">||</button>
+            <button class="btn" id="stop">■</button>
+            &nbsp;&nbsp;<button class="btn" id="prev"><<</button>
+            <button class="btn" id="next">>></button>
+            &nbsp;&nbsp;<button class="btn" id="clear">clear</button>
+        </div>
+        <br>
+        <div id="playlist">
+            {% for filename in  playlist %}
+                {{ filename }}<br/>
+            {% endfor %}
+        </div>
+        <br>
+        <div id="search_input">
+            検索 : <input type="text" name="search" size=50/>
+            <button class="btn" id="exec_search">search</button>
+            <button class="btn" id="reset_list">clear</button>
+        </div>
+        <div id="search_result">
+            {% for filename in files %}
+                <ul>
+                    <li><input type="checkbox" name="select" filename="{{ filename }}"> : {{ filename }}</li>
+                </ul>
+            {% endfor %}
+        </div>
     </div>
     {% csrf_token %}
 </div>
