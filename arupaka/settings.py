@@ -16,6 +16,7 @@ MOVIE_DIR = "/Users/non/Desktop/anime"
 #MOVIE_DIR = "D:¥¥Anime¥¥TV¥¥"
 OPTION = ' --intf telnet --sout "#standard{access=http, mux=ts, dst=:8080}"'
 #OPTION = ' --intf telnet --sout "#transcode{vcodec=h264, width=1280, height=720, vb=800, ab=128, delay=5000}: standard{access=http, mux=ts, dst=:8080}"'
+UPDATE_TIME = 3600 # sec
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),

@@ -45,11 +45,13 @@ $(function(){
     });
     var csrf = "&csrfmiddlewaretoken=" + $("input[name='csrfmiddlewaretoken']").val();
     function selectbind(){
-        $('input[name="select"]').click(function(){
-            var filename = $(this).attr("filename");
-            $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
-            add_to_list(filename);
-            $(this).delay(10).queue(sync);
+        $('input[name="select"]').change(function(){
+            if (this.checked){
+                var filename = $(this).attr("filename");
+                $.ajax({type:"POST",url:"/select",data:"filename=" + filename + csrf});
+                add_to_list(filename);
+                $(this).delay(10).queue(sync);
+            }
         });
     }
     function search(keyword){

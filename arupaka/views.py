@@ -11,15 +11,15 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from arupaka.vlclib import Controller, get_vlc_status, VLC_STATUS_STOPPED, VLC_STATUS_PAUSED
-from arupaka.settings import VLC_PATH, MOVIE_DIR, ENCODING, OPTION
+from arupaka.settings import VLC_PATH, MOVIE_DIR, ENCODING, OPTION, UPDATE_TIME
 
 ip = urllib.urlopen("http://ipcheck.ieserver.net/").read()
 
-def index(request): #POSTの時にアレする
+def index(request):
     movies = cache.get("movies")
     if movies is None:
         movies = Movies()
-        cache.set("movies", movies, 3600)
+        cache.set("movies", movies, UPDATE_TIME)
     if request.method == "GET":
         files = movies.get_filenames()
         extra_context = {"files":files, "ip":ip}
