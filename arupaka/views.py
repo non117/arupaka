@@ -41,7 +41,7 @@ def select(request):
             command = vlc + ' -vvv "%s"' %  moviepath + OPTION
             if os.name == "nt": command = shlex.split(command) # windows
             p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-            cache.set("pid", p.pid, 86400) # 24h
+            cache.set("pid", p.pid, 86400*365) # 24h
             atexit.register(kill)
             
             import time
