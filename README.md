@@ -2,7 +2,7 @@ arupaka
 =======
 arupakaは, VODな動画配信システムです.
 
-# 動作環境
+## 動作環境
 Windows, Mac OSX, Linux, etc...
 
 [VLC](http://www.videolan.org/vlc/), Python 2.x, Django 1.xが必要.
